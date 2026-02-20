@@ -1,0 +1,79 @@
+---
+title: Cancel by Client ID
+description: Cancel orders using your client order ID (cloid)
+---
+
+<Note>
+  `POST /exchange`
+</Note>
+
+Cancel orders by the client order ID you assigned when placing the order.
+
+## Request body
+
+```json
+{
+  "wallet": "0xYourAddress",
+  "action": {
+    "type": "cancelByCloid",
+    "cancels": [
+      { "asset": 0, "cloid": "my-order-1" }
+    ]
+  }
+}
+```
+
+### Parameters
+
+<ParamField body="wallet" type="string" required>
+  Wallet address of the order owner.
+</ParamField>
+
+<ParamField body="action.type" type="string" required>
+  Must be `"cancelByCloid"`.
+</ParamField>
+
+<ParamField body="action.cancels" type="array" required>
+  Array of cancel-by-cloid requests.
+</ParamField>
+
+### Cancel fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `asset` | `number` | Asset index |
+| `cloid` | `string` | Client order ID assigned at placement |
+
+## Response
+
+```json
+{
+  "status": "ok",
+  "response": {
+    "type": "cancel",
+    "data": {
+      "statuses": ["success"]
+    }
+  }
+}
+```
+
+### Possible errors
+
+| Error | Cause |
+|-------|-------|
+| `"cloid {cloid} not found"` | No order with that client ID exists |
+
+## Example
+
+```bash
+curl -s http://localhost:3000/exchange \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "wallet": "0xtest",
+    "action": {
+      "type": "cancelByCloid",
+      "cancels": [{"asset": 0, "cloid": "my-order-1"}]
+    }
+  }'
+```

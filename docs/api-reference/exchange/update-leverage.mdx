@@ -1,0 +1,79 @@
+---
+title: Update Leverage
+description: Set leverage and margin mode for an asset
+---
+
+<Note>
+  `POST /exchange`
+</Note>
+
+Change the leverage and margin mode (cross or isolated) for a specific asset.
+
+## Request body
+
+```json
+{
+  "wallet": "0xYourAddress",
+  "action": {
+    "type": "updateLeverage",
+    "asset": 0,
+    "isCross": true,
+    "leverage": 50
+  }
+}
+```
+
+### Parameters
+
+<ParamField body="wallet" type="string" required>
+  Wallet address.
+</ParamField>
+
+<ParamField body="action.type" type="string" required>
+  Must be `"updateLeverage"`.
+</ParamField>
+
+<ParamField body="action.asset" type="number" required>
+  Asset index to update.
+</ParamField>
+
+<ParamField body="action.isCross" type="boolean" required>
+  `true` for cross-margin, `false` for isolated.
+</ParamField>
+
+<ParamField body="action.leverage" type="number" required>
+  Leverage multiplier. Must be between **1** and **200**.
+</ParamField>
+
+## Response
+
+```json
+{
+  "status": "ok",
+  "response": {
+    "type": "default"
+  }
+}
+```
+
+### Possible errors
+
+| Error | Cause |
+|-------|-------|
+| `"Leverage must be between 1 and 200"` | Out of valid range |
+
+## Example
+
+```bash
+curl -s http://localhost:3000/exchange \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "wallet": "0xtest",
+    "action": {
+      "type": "updateLeverage",
+      "asset": 0,
+      "isCross": true,
+      "leverage": 50
+    }
+  }'
+```

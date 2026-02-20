@@ -1,0 +1,218 @@
+---
+title: WebSocket
+description: Real-time streaming of prices, orders, and fills
+---
+
+## Connection
+
+```
+ws://localhost:3000/ws
+```
+
+JSON messages only. The server sends a ping every 30 seconds — clients must respond with pong to stay connected.
+
+## Subscribe
+
+Send a `subscribe` message to start receiving updates on a channel:
+
+```json
+{ "method": "subscribe", "subscription": { "type": "allMids" } }
+```
+
+The server confirms with:
+
+```json
+{
+  "channel": "subscriptionResponse",
+  "data": {
+    "method": "subscribe",
+    "subscription": { "type": "allMids" }
+  }
+}
+```
+
+## Unsubscribe
+
+```json
+{ "method": "unsubscribe", "subscription": { "type": "allMids" } }
+```
+
+## Channels
+
+### allMids
+
+Live mid prices for all assets. Sends a snapshot immediately on subscribe, then updates on every price tick.
+
+**Subscribe:**
+```json
+{ "method": "subscribe", "subscription": { "type": "allMids" } }
+```
+
+**Messages:**
+```json
+{
+  "channel": "allMids",
+  "data": {
+    "mids": {
+      "BTC": "97523.5",
+      "ETH": "3412.75",
+      "SOL": "185.42"
+    }
+  }
+}
+```
+
+---
+
+### l2Book
+
+L2 order book for a specific asset. Sends a snapshot on subscribe.
+
+**Subscribe:**
+```json
+{ "method": "subscribe", "subscription": { "type": "l2Book", "coin": "BTC" } }
+```
+
+**Messages:**
+```json
+{
+  "channel": "l2Book",
+  "data": {
+    "coin": "BTC",
+    "levels": [
+      [{ "px": "49999", "sz": "1.5", "n": 3 }],
+      [{ "px": "50001", "sz": "2.0", "n": 4 }]
+    ],
+    "time": 1705000000000
+  }
+}
+```
+
+`levels[0]` = bids (highest first), `levels[1]` = asks (lowest first).
+
+---
+
+### orderUpdates
+
+Real-time order status changes for a specific user. No snapshot on subscribe.
+
+**Subscribe:**
+```json
+{ "method": "subscribe", "subscription": { "type": "orderUpdates", "user": "0xtest" } }
+```
+
+**Messages:**
+```json
+{
+  "channel": "orderUpdates",
+  "data": [
+    {
+      "order": {
+        "coin": "BTC",
+        "side": "B",
+        "limitPx": "49000",
+        "sz": "1",
+        "oid": 123,
+        "timestamp": 1705000000000,
+        "origSz": "1"
+      },
+      "status": "filled",
+      "statusTimestamp": 1705000050000
+    }
+  ]
+}
+```
+
+Status values: `"open"`, `"filled"`, `"cancelled"`
+
+---
+
+### userFills
+
+Real-time fill notifications for a specific user. No snapshot on subscribe.
+
+**Subscribe:**
+```json
+{ "method": "subscribe", "subscription": { "type": "userFills", "user": "0xtest" } }
+```
+
+**Messages:**
+```json
+{
+  "channel": "userFills",
+  "data": {
+    "isSnapshot": false,
+    "user": "0xtest",
+    "fills": [
+      {
+        "coin": "BTC",
+        "px": "50010.5",
+        "sz": "1",
+        "side": "B",
+        "time": 1705000000000,
+        "dir": "Open Long",
+        "closedPnl": "0",
+        "hash": "0x...",
+        "oid": 123,
+        "crossed": true,
+        "fee": "0",
+        "tid": 111,
+        "feeToken": "USDC"
+      }
+    ]
+  }
+}
+```
+
+## Example (JavaScript)
+
+```javascript
+const ws = new WebSocket('ws://localhost:3000/ws');
+
+ws.onopen = () => {
+  // Subscribe to multiple channels
+  ws.send(JSON.stringify({
+    method: 'subscribe',
+    subscription: { type: 'allMids' }
+  }));
+
+  ws.send(JSON.stringify({
+    method: 'subscribe',
+    subscription: { type: 'orderUpdates', user: '0xtest' }
+  }));
+
+  ws.send(JSON.stringify({
+    method: 'subscribe',
+    subscription: { type: 'userFills', user: '0xtest' }
+  }));
+};
+
+ws.onmessage = (event) => {
+  const msg = JSON.parse(event.data);
+  console.log(msg.channel, msg.data);
+};
+```
+
+## Example (Python)
+
+```python
+import json
+import websocket
+
+def on_message(ws, message):
+    msg = json.loads(message)
+    print(msg["channel"], msg["data"])
+
+def on_open(ws):
+    ws.send(json.dumps({
+        "method": "subscribe",
+        "subscription": {"type": "allMids"}
+    }))
+
+ws = websocket.WebSocketApp(
+    "ws://localhost:3000/ws",
+    on_open=on_open,
+    on_message=on_message,
+)
+ws.run_forever()
+```

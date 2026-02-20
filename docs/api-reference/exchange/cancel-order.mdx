@@ -1,0 +1,86 @@
+---
+title: Cancel Order
+description: Cancel one or more orders by asset and order ID
+---
+
+<Note>
+  `POST /exchange`
+</Note>
+
+Cancel open orders by specifying the asset index and order ID.
+
+## Request body
+
+```json
+{
+  "wallet": "0xYourAddress",
+  "action": {
+    "type": "cancel",
+    "cancels": [
+      { "a": 0, "o": 12345 }
+    ]
+  }
+}
+```
+
+### Parameters
+
+<ParamField body="wallet" type="string" required>
+  Wallet address of the order owner.
+</ParamField>
+
+<ParamField body="action.type" type="string" required>
+  Must be `"cancel"`.
+</ParamField>
+
+<ParamField body="action.cancels" type="array" required>
+  Array of cancel requests.
+</ParamField>
+
+### Cancel fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `a` | `number` | Asset index |
+| `o` | `number` | Order ID to cancel |
+
+## Response
+
+```json
+{
+  "status": "ok",
+  "response": {
+    "type": "cancel",
+    "data": {
+      "statuses": ["success"]
+    }
+  }
+}
+```
+
+Each entry in `statuses` is either `"success"` or an error object:
+
+```json
+{ "error": "Order 12345 not found" }
+```
+
+### Possible errors
+
+| Error | Cause |
+|-------|-------|
+| `"Order {oid} not found"` | Order doesn't exist or belongs to another user |
+| `"Order {oid} is not open (status: filled)"` | Order already filled or cancelled |
+
+## Example
+
+```bash
+curl -s http://localhost:3000/exchange \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "wallet": "0xtest",
+    "action": {
+      "type": "cancel",
+      "cancels": [{"a": 0, "o": 1}]
+    }
+  }'
+```

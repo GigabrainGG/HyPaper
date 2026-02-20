@@ -1,0 +1,128 @@
+---
+title: Architecture
+description: How HyPaper is built and how data flows through the system
+---
+
+## System overview
+
+HyPaper is a stateful backend with three main subsystems that communicate through Redis and an in-process EventBus.
+
+```
+┌─────────────────────────────────────────────────────┐
+│                   HyperLiquid                       │
+│              (real market data)                      │
+└──────────────────┬──────────────────────────────────┘
+                   │ WebSocket (allMids, activeAssetCtx)
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│                    Worker                            │
+│  ┌─────────────┐  ┌──────────────┐  ┌────────────┐ │
+│  │  WS Client  │→ │Price Updater │→ │   Order    │ │
+│  │  (reconnect)│  │ (parse, emit)│  │  Matcher   │ │
+│  └─────────────┘  └──────────────┘  └────────────┘ │
+└──────────────────┬──────────────────────────────────┘
+                   │ reads/writes
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│                    Redis                             │
+│  market:mids · user:{id}:account · order:{oid}      │
+│  user:{id}:pos:{asset} · orders:open · seq:oid      │
+└──────────────────┬──────────────────────────────────┘
+                   │ reads
+                   ▼
+┌─────────────────────────────────────────────────────┐
+│                  API Server (Hono)                   │
+│  POST /exchange  ·  POST /info  ·  POST /hypaper    │
+└──────────────────┬──────────────────────────────────┘
+                   │ EventBus
+                   ▼
+┌──────────────────┬──────────────────────────────────┐
+│  WebSocket (/ws) │         PostgreSQL               │
+│  (client pushes) │    (async persistence)            │
+└──────────────────┴──────────────────────────────────┘
+```
+
+## Data flow
+
+### Price updates
+
+1. Worker connects to HyperLiquid's WebSocket
+2. `PriceUpdater` parses incoming `allMids` and `activeAssetCtx` messages
+3. Mid prices written to `market:mids` Redis hash
+4. `EventBus.emit('mids')` triggers order matching and WebSocket broadcast
+
+### Order lifecycle
+
+1. Client sends `POST /exchange` with an order
+2. Engine validates the order (asset, margin, TIF rules)
+3. Order saved to Redis hash `order:{oid}`
+4. **If price crosses immediately**: fill executed inline, response returns `filled`
+5. **If not**: order added to `orders:open` set, response returns `resting`
+6. On each price tick, `OrderMatcher.matchAll()` scans open orders and triggers
+7. Fill creates/updates position, credits PnL to balance, emits events
+8. `pg-sink` listeners asynchronously persist fills and order updates to PostgreSQL
+
+### State boundaries
+
+| Store | Purpose | Latency |
+|-------|---------|---------|
+| **Redis** | All hot state (positions, orders, balances, prices) | Microseconds |
+| **PostgreSQL** | Historical data (fills, order history, users) | Milliseconds |
+| **In-memory** | Proxy cache for HL API responses, L2 book cache | Zero |
+
+## Key design decisions
+
+### Redis-first architecture
+
+All reads during order matching and API responses come from Redis. PostgreSQL is only written to asynchronously via the EventBus. This means:
+
+- Order matching runs in microseconds, not milliseconds
+- No database contention during high-frequency price updates
+- If Postgres is temporarily unavailable, trading continues
+
+### Decimal math everywhere
+
+All prices, sizes, and balances use `decimal.js` string arithmetic. No floating-point. This prevents the classic `0.1 + 0.2 !== 0.3` problem that can cause incorrect PnL calculations.
+
+### Same wire format as HyperLiquid
+
+HyPaper intentionally mirrors HL's API shapes. This means:
+
+- Existing HL bots work with zero code changes
+- The same TypeScript types describe both real and paper API responses
+- WebSocket subscriptions use identical channel names and message formats
+
+## Project structure
+
+```
+src/
+├── api/                # HTTP layer
+│   ├── middleware/      # Auth (auto-create), rate limiting
+│   ├── routes/          # exchange, info, hypaper handlers
+│   └── server.ts        # Hono app setup
+├── engine/             # Trading logic
+│   ├── order.ts         # Order placement & cancellation
+│   ├── margin.ts        # Margin checks, PnL, liquidation
+│   ├── position.ts      # Clearinghouse state builder
+│   └── fill.ts          # Fill history queries
+├── worker/             # Background processes
+│   ├── order-matcher.ts # Core matching engine
+│   ├── price-updater.ts # HL WebSocket → Redis
+│   └── ws-client.ts     # Reconnecting WebSocket client
+├── store/              # Persistence
+│   ├── redis.ts         # Redis connection
+│   ├── keys.ts          # Redis key schema
+│   ├── schema.ts        # Drizzle ORM schema
+│   └── pg-sink.ts       # Async event → Postgres writers
+├── ws/                 # WebSocket server
+│   └── server.ts        # /ws endpoint, subscriptions
+├── utils/              # Shared utilities
+│   ├── math.ts          # decimal.js wrappers
+│   ├── slippage.ts      # VWAP fill price calculator
+│   └── l2-cache.ts      # L2 book cache
+├── types/              # TypeScript interfaces
+│   ├── hl.ts            # HyperLiquid API types
+│   └── order.ts         # Internal order/fill types
+├── config.ts           # Zod-validated env config
+└── index.ts            # Entry point
+```

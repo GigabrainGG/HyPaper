@@ -1,0 +1,106 @@
+---
+title: API Overview
+description: Base URL, authentication, rate limiting, and common patterns
+---
+
+## Base URL
+
+```
+http://localhost:3000
+```
+
+Configurable via the `PORT` environment variable.
+
+## Authentication
+
+HyPaper has **no authentication**. This mirrors HyperLiquid's public info API and simplifies integration.
+
+- `/info` — fully public. User-specific queries pass `user` (wallet address) in the body.
+- `/exchange` — requires `wallet` in the request body to identify the user.
+- `/hypaper` — uses `user` in the request body.
+
+Any string works as a wallet address. Accounts are auto-created on first use with the configured default balance ($100,000).
+
+<Note>
+  Wallet addresses are **normalized to lowercase**. `0xAbC` and `0xabc` resolve to the same account.
+</Note>
+
+## Content type
+
+All endpoints accept and return `application/json`.
+
+```bash
+curl -X POST http://localhost:3000/info \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "allMids"}'
+```
+
+## Rate limiting
+
+Default: **120 requests per 60 seconds** per IP address. Configurable via `RATE_LIMIT_MAX` and `RATE_LIMIT_WINDOW_MS`.
+
+When exceeded, the API returns HTTP `429` with a `X-RateLimit-Remaining` header.
+
+## Response formats
+
+### Exchange responses
+
+All `/exchange` responses use a consistent wrapper:
+
+```json
+{
+  "status": "ok",
+  "response": {
+    "type": "order",
+    "data": {
+      "statuses": [...]
+    }
+  }
+}
+```
+
+Error responses:
+
+```json
+{
+  "status": "err",
+  "response": "Error message here"
+}
+```
+
+### Info responses
+
+`/info` responses return the data directly (no wrapper), matching HyperLiquid's format.
+
+### Status codes
+
+| Code | Meaning |
+|------|---------|
+| `200` | Success |
+| `400` | Invalid request (missing fields, bad format) |
+| `405` | Wrong HTTP method (GET on POST-only endpoints) |
+| `429` | Rate limited |
+| `500` | Internal server error |
+
+## Health check
+
+```
+GET /health
+```
+
+```json
+{ "status": "ok", "time": 1705000000000 }
+```
+
+## Proxied endpoints
+
+Some `/info` types are proxied to the real HyperLiquid API with caching:
+
+| Type | Cache TTL |
+|------|-----------|
+| `meta` | 60s |
+| `metaAndAssetCtxs` | 2s |
+| `l2Book` | 1s |
+| `candleSnapshot` | 5s |
+| `fundingHistory` | 30s |
+| Any unrecognized type | 5s |

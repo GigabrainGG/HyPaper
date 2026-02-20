@@ -1,0 +1,61 @@
+---
+title: Fill Pricing
+description: How HyPaper computes realistic fill prices using VWAP
+---
+
+## Overview
+
+HyPaper doesn't fill orders at the mid price. It computes a **Volume-Weighted Average Price (VWAP)** by walking the real HyperLiquid L2 order book. This simulates realistic slippage based on order size and book depth.
+
+## How VWAP works
+
+When a buy order fills, HyPaper walks the **ask side** of the book (lowest to highest). For sells, it walks the **bid side** (highest to lowest).
+
+### Example: buying 3 BTC
+
+Given this ask book:
+
+| Level | Price | Size |
+|-------|-------|------|
+| 1 | $50,000 | 1.0 |
+| 2 | $50,010 | 2.0 |
+| 3 | $50,020 | 3.0 |
+
+Filling 3 BTC:
+- 1.0 @ $50,000 = $50,000
+- 2.0 @ $50,010 = $100,020
+- **Total**: $150,020 / 3.0 = **$50,006.67**
+
+The VWAP is $50,006.67 — slightly worse than the best ask, reflecting realistic slippage.
+
+## Limit price clamping
+
+The VWAP walk stops at your limit price. Levels beyond the limit are skipped. This means:
+
+- **Buy VWAP is never above your limit price**
+- **Sell VWAP is never below your limit price**
+
+You always get a price equal to or better than your limit.
+
+## Insufficient book depth
+
+If the order book doesn't have enough depth to fill the entire order, the remaining quantity is priced at the **worst available level** (clamped to the limit price).
+
+### Example: buying 10 BTC with only 6 BTC of depth
+
+| Book | Priced at book levels |
+|------|----------------------|
+| 6 BTC filled from 3 levels | VWAP of those levels |
+| 4 BTC remaining | Priced at last level ($50,020), clamped to limit |
+
+## Fallback pricing
+
+If the L2 book is unavailable (network issues, cache miss), the order fills at the **mid price**. This is the conservative fallback — no slippage simulation.
+
+## L2 book cache
+
+To avoid hammering the HyperLiquid API, L2 books are cached for **2 seconds** with request deduplication. Concurrent fills for the same coin share a single book fetch.
+
+## Market orders (triggers)
+
+Trigger orders with `isMarket: true` use the mid price as the base but still apply VWAP. There's no limit price clamping — the fill price reflects the actual book depth at the trigger moment.

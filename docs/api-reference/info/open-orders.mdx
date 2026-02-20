@@ -1,0 +1,59 @@
+---
+title: Open Orders
+description: Get all open orders for a user
+---
+
+<Note>
+  `POST /info`
+</Note>
+
+Returns all currently open (resting) orders for a user.
+
+## Request body
+
+```json
+{
+  "type": "openOrders",
+  "user": "0xYourAddress"
+}
+```
+
+<ParamField body="user" type="string" required>
+  Wallet address.
+</ParamField>
+
+## Response
+
+```json
+[
+  {
+    "coin": "BTC",
+    "side": "B",
+    "limitPx": "49000",
+    "sz": "1",
+    "oid": 123,
+    "timestamp": 1705000000000,
+    "origSz": "1",
+    "cloid": "my-order-1"
+  }
+]
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `coin` | `string` | Asset name |
+| `side` | `string` | `"B"` (buy) or `"A"` (ask/sell) |
+| `limitPx` | `string` | Limit price |
+| `sz` | `string` | Remaining size |
+| `oid` | `number` | Order ID |
+| `timestamp` | `number` | Creation time (epoch ms) |
+| `origSz` | `string` | Original order size |
+| `cloid` | `string?` | Client order ID (if provided) |
+
+## Example
+
+```bash
+curl -s http://localhost:3000/info \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "openOrders", "user": "0xtest"}'
+```

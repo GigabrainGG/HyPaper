@@ -1,0 +1,64 @@
+---
+title: Introduction
+description: Open-source paper trading backend for HyperLiquid
+---
+
+# HyPaper
+
+HyPaper is an open-source paper trading backend for [HyperLiquid](https://hyperliquid.xyz). It mirrors HyperLiquid's API — same request shapes, same response shapes, same WebSocket protocol — but uses simulated money instead of real funds.
+
+Swap `api.hyperliquid.xyz` for your HyPaper URL and your existing bot just works.
+
+## Why HyPaper?
+
+<CardGroup cols={2}>
+  <Card title="Drop-in replacement" icon="plug">
+    Same wire format as HyperLiquid. Existing bots need zero code changes beyond the base URL.
+  </Card>
+  <Card title="Real market data" icon="chart-line">
+    Live prices streamed from HyperLiquid's WebSocket feed. Orders fill against real mid prices.
+  </Card>
+  <Card title="No wallet signing" icon="key">
+    Pass any string as a wallet address. Accounts are auto-created on first request with $100k default balance.
+  </Card>
+  <Card title="Full trading engine" icon="gears">
+    Limit orders, IOC, ALO, stop-loss, take-profit, margin checks, PnL tracking, and VWAP fill pricing.
+  </Card>
+</CardGroup>
+
+## How it works
+
+```
+HL WebSocket Feed ──> Worker Process ──> Redis (all hot state)
+                       - price updates        |
+                       - order matching        | reads
+                       - fill execution        v
+                                          Hono API Server
+                                          POST /exchange
+                                          POST /info
+                                          POST /hypaper
+                                               |
+                       EventBus <──────────────+
+                         |
+                         v
+                    WebSocket Server (/ws)
+                    - allMids, l2Book
+                    - orderUpdates, userFills
+```
+
+1. **Worker** streams live market data from HyperLiquid via WebSocket and fills paper orders on every price tick
+2. **Redis** holds all hot state: prices, positions, orders, fills, balances
+3. **API** mirrors HL's endpoints so existing bots need minimal code changes
+4. **WebSocket** pushes real-time updates to connected clients
+
+## Tech stack
+
+| Component | Technology |
+|-----------|-----------|
+| Runtime | Node.js + TypeScript |
+| HTTP | [Hono](https://hono.dev) |
+| WebSocket | [ws](https://github.com/websockets/ws) |
+| State | Redis via ioredis |
+| Persistence | PostgreSQL via Drizzle ORM |
+| Math | [decimal.js](https://github.com/MikeMcl/decimal.js) (zero floating-point errors) |
+| Validation | Zod |

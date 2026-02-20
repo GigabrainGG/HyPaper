@@ -1,0 +1,94 @@
+---
+title: Order Matching
+description: How orders are matched and filled against live market prices
+---
+
+## Overview
+
+HyPaper matches orders against **live mid prices** streamed from HyperLiquid. On every WebSocket price tick, the `OrderMatcher` scans all open orders and trigger orders for fill conditions.
+
+## Matching cycle
+
+```
+Price Update → matchOpenOrders() → matchTriggerOrders()
+```
+
+The matcher runs serially with a concurrency guard — if a match cycle is already running, the next price tick is skipped. This prevents duplicate fills.
+
+## Limit orders
+
+| Side | Fill condition |
+|------|---------------|
+| **Buy** | `midPx <= limitPx` |
+| **Sell** | `midPx >= limitPx` |
+
+A limit buy at $50,000 fills when the market mid drops to or below $50,000. A limit sell at $50,000 fills when the market mid rises to or above $50,000.
+
+## Time-in-force (TIF)
+
+<Tabs>
+  <Tab title="GTC (Good-til-Cancelled)">
+    The default. If the price crosses the limit at placement time, the order fills immediately. Otherwise, it rests on the book and waits for a future price tick.
+
+    ```json
+    { "t": { "limit": { "tif": "Gtc" } } }
+    ```
+  </Tab>
+  <Tab title="IOC (Immediate-or-Cancel)">
+    Must fill immediately or the order is rejected. If the current mid price doesn't cross the limit, you get:
+
+    ```json
+    { "error": "IOC order could not be filled" }
+    ```
+  </Tab>
+  <Tab title="ALO (Add Liquidity Only)">
+    Post-only. If the order *would* fill immediately (price already crosses), it's rejected:
+
+    ```json
+    { "error": "ALO order would have crossed" }
+    ```
+
+    Use ALO when you want to guarantee your order rests on the book.
+  </Tab>
+</Tabs>
+
+## Trigger orders (TP/SL)
+
+Trigger orders wait for a price condition, then execute.
+
+### Stop-loss (SL)
+
+Protects against adverse price movement:
+
+| Direction | Trigger condition |
+|-----------|------------------|
+| Sell SL (close long) | `midPx <= triggerPx` |
+| Buy SL (close short) | `midPx >= triggerPx` |
+
+### Take-profit (TP)
+
+Locks in gains at a target price:
+
+| Direction | Trigger condition |
+|-----------|------------------|
+| Sell TP (close long) | `midPx >= triggerPx` |
+| Buy TP (close short) | `midPx <= triggerPx` |
+
+### Market vs limit triggers
+
+When a trigger fires:
+
+- **Market trigger** (`isMarket: true`): fills at the current mid price
+- **Limit trigger** (`isMarket: false`): fills at the limit price (clamped by the book)
+
+## Reduce-only orders
+
+Orders with `reduceOnly: true` can only decrease an existing position:
+
+- If no position exists, the fill is skipped
+- If the order would increase the position (e.g., buying when already long), it's skipped
+- If the order size exceeds the position, it's clamped to exactly close the position
+
+## Fill price
+
+Fill price isn't simply the mid price. HyPaper computes a **VWAP (Volume-Weighted Average Price)** from the real L2 order book. See [Fill Pricing](/concepts/fill-pricing) for details.

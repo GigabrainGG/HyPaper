@@ -1,0 +1,101 @@
+---
+title: Margin & Leverage
+description: How margin, leverage, PnL, and liquidation prices work
+---
+
+## Account model
+
+Every account has a **balance** (USDC) and zero or more **positions**. The balance starts at the configured `DEFAULT_BALANCE` (default: $100,000).
+
+```
+Account Value = Balance + Total Unrealized PnL
+```
+
+## Leverage
+
+Default leverage is **20x cross-margin** for all assets. You can change it per-asset via `updateLeverage`:
+
+- Range: **1x** to **200x**
+- Modes: `cross` or `isolated`
+
+## Margin calculation
+
+For each position:
+
+```
+Margin Used = (|position size| × mark price) / leverage
+```
+
+For a new order:
+
+```
+Margin Needed = (order size × order price) / leverage
+Available Margin = Account Value - Total Margin Used
+```
+
+The order is rejected with `"Insufficient margin"` if `marginNeeded > availableMargin`.
+
+<Note>
+  **Reduce-only orders skip margin checks.** Since they only decrease positions, they free margin rather than consume it.
+</Note>
+
+## Unrealized PnL
+
+Calculated per-position against the current mark (mid) price:
+
+| Position | Formula |
+|----------|---------|
+| **Long** | `(markPx - entryPx) × size` |
+| **Short** | `(entryPx - markPx) × size` |
+
+## Realized (closed) PnL
+
+When you close or partially close a position, the realized PnL is immediately credited to your balance:
+
+| Position | Formula |
+|----------|---------|
+| **Close long** | `(fillPx - entryPx) × closedSize` |
+| **Close short** | `(entryPx - fillPx) × closedSize` |
+
+### Example
+
+```
+Open long 1 BTC @ $50,000
+Close long 1 BTC @ $52,000
+
+Closed PnL = ($52,000 - $50,000) × 1 = +$2,000
+New balance = $100,000 + $2,000 = $102,000
+```
+
+## Entry price averaging
+
+When you increase an existing position, the entry price updates to a **weighted average**:
+
+```
+New Entry = (|currentSize| × currentEntry + fillSize × fillPrice)
+            / (|currentSize| + fillSize)
+```
+
+When you partially close, the entry price stays the same. When you flip (e.g., long to short), the new entry becomes the fill price.
+
+## Liquidation price
+
+A simplified model based on maintenance margin (half of initial margin):
+
+| Position | Liquidation price |
+|----------|------------------|
+| **Long** | `entryPx × (1 - 1/leverage + 1/(2×leverage))` |
+| **Short** | `entryPx × (1 + 1/leverage - 1/(2×leverage))` |
+
+### Examples
+
+| Leverage | Long entry $50,000 | Short entry $50,000 |
+|----------|-------------------|---------------------|
+| 5x | $40,000 | $60,000 |
+| 20x | $48,750 | $51,250 |
+| 50x | $49,500 | $50,500 |
+| 100x | $49,750 | $50,250 |
+
+<Warning>
+  HyPaper does not currently auto-liquidate positions. The liquidation price is provided for display purposes. Balances can go negative on extreme moves.
+</Warning>

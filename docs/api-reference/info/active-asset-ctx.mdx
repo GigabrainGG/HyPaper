@@ -1,0 +1,64 @@
+---
+title: Active Asset Context
+description: Get funding rate, open interest, and mark price for an asset
+---
+
+<Note>
+  `POST /info`
+</Note>
+
+Returns the current market context for a specific asset, including funding rate, open interest, and mark price. Data is sourced from HyperLiquid's live feed.
+
+## Request body
+
+```json
+{
+  "type": "activeAssetCtx",
+  "coin": "BTC"
+}
+```
+
+<ParamField body="coin" type="string" required>
+  Asset name (e.g., `"BTC"`, `"ETH"`, `"SOL"`).
+</ParamField>
+
+## Response
+
+```json
+{
+  "coin": "BTC",
+  "ctx": {
+    "funding": "0.0001",
+    "openInterest": "1000000",
+    "prevDayPx": "49000",
+    "dayNtlVlm": "500000000",
+    "premium": "0.0005",
+    "oraclePx": "50000",
+    "markPx": "50010",
+    "midPx": "50005.5",
+    "impactPxs": ["50000", "50020"]
+  }
+}
+```
+
+### Context fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `funding` | `string` | Current funding rate |
+| `openInterest` | `string` | Total open interest |
+| `prevDayPx` | `string` | Previous day's closing price |
+| `dayNtlVlm` | `string` | 24h notional volume |
+| `premium` | `string` | Mark price premium over oracle |
+| `oraclePx` | `string` | Oracle price |
+| `markPx` | `string` | Mark price |
+| `midPx` | `string?` | Mid price |
+| `impactPxs` | `[string, string]?` | Impact bid and ask prices |
+
+## Example
+
+```bash
+curl -s http://localhost:3000/info \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "activeAssetCtx", "coin": "BTC"}'
+```

@@ -1,0 +1,199 @@
+---
+title: Place Order
+description: Place one or more orders (limit, IOC, ALO, trigger/TP-SL)
+---
+
+<Note>
+  `POST /exchange`
+</Note>
+
+Place up to 50 orders in a single request. Supports limit orders, immediate-or-cancel (IOC), add-liquidity-only (ALO), and trigger orders (stop-loss, take-profit).
+
+## Request body
+
+```json
+{
+  "wallet": "0xYourAddress",
+  "action": {
+    "type": "order",
+    "grouping": "na",
+    "orders": [
+      {
+        "a": 0,
+        "b": true,
+        "p": "50000",
+        "s": "1",
+        "r": false,
+        "t": {
+          "limit": { "tif": "Gtc" }
+        },
+        "c": "my-client-id"
+      }
+    ]
+  }
+}
+```
+
+### Parameters
+
+<ParamField body="wallet" type="string" required>
+  Wallet address identifying the user. Auto-creates account on first use.
+</ParamField>
+
+<ParamField body="action.type" type="string" required>
+  Must be `"order"`.
+</ParamField>
+
+<ParamField body="action.grouping" type="string" required>
+  Order grouping. One of:
+  - `"na"` — standalone order
+  - `"normalTpsl"` — TP/SL group
+  - `"positionTpsl"` — position-level TP/SL
+</ParamField>
+
+<ParamField body="action.orders" type="array" required>
+  Array of order wire objects (max 50).
+</ParamField>
+
+### Order wire fields
+
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `a` | `number` | Yes | Asset index (0 = BTC, 1 = ETH, etc.) |
+| `b` | `boolean` | Yes | `true` = buy, `false` = sell |
+| `p` | `string` | Yes | Limit price (must be positive) |
+| `s` | `string` | Yes | Size (must be positive) |
+| `r` | `boolean` | Yes | Reduce-only flag |
+| `t` | `object` | Yes | Order type configuration |
+| `c` | `string` | No | Client order ID (cloid) |
+
+### Order type (`t`)
+
+**Limit order:**
+```json
+{ "limit": { "tif": "Gtc" } }
+```
+TIF options: `"Gtc"`, `"Ioc"`, `"Alo"`
+
+**Trigger order (TP/SL):**
+```json
+{
+  "trigger": {
+    "isMarket": true,
+    "triggerPx": "49000",
+    "tpsl": "sl"
+  },
+  "limit": { "tif": "Gtc" }
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `isMarket` | `boolean` | `true` = fill at market when triggered, `false` = fill at limit |
+| `triggerPx` | `string` | Price that activates the trigger |
+| `tpsl` | `string` | `"tp"` (take-profit) or `"sl"` (stop-loss) |
+
+## Response
+
+```json
+{
+  "status": "ok",
+  "response": {
+    "type": "order",
+    "data": {
+      "statuses": [
+        { "filled": { "totalSz": "1", "avgPx": "50010.5", "oid": 1 } }
+      ]
+    }
+  }
+}
+```
+
+### Status types
+
+Each order in the `statuses` array is one of:
+
+**Filled immediately:**
+```json
+{ "filled": { "totalSz": "1", "avgPx": "50010.5", "oid": 123, "cloid": "my-id" } }
+```
+
+**Resting on book:**
+```json
+{ "resting": { "oid": 123, "cloid": "my-id" } }
+```
+
+**Error:**
+```json
+{ "error": "Insufficient margin" }
+```
+
+### Possible errors
+
+| Error | Cause |
+|-------|-------|
+| `"Unknown asset {n}"` | Invalid asset index |
+| `"IOC order could not be filled"` | IOC order can't fill at current price |
+| `"ALO order would have crossed"` | ALO order would fill immediately |
+| `"Insufficient margin"` | Not enough available margin |
+| `"No market price available"` | No mid price for the asset yet |
+
+## Examples
+
+<Tabs>
+  <Tab title="Limit buy (GTC)">
+    ```bash
+    curl -s http://localhost:3000/exchange \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "wallet": "0xtest",
+        "action": {
+          "type": "order",
+          "grouping": "na",
+          "orders": [{
+            "a": 0, "b": true, "p": "90000", "s": "0.01",
+            "r": false, "t": {"limit": {"tif": "Gtc"}}
+          }]
+        }
+      }'
+    ```
+  </Tab>
+  <Tab title="Market sell (IOC)">
+    ```bash
+    curl -s http://localhost:3000/exchange \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "wallet": "0xtest",
+        "action": {
+          "type": "order",
+          "grouping": "na",
+          "orders": [{
+            "a": 0, "b": false, "p": "1", "s": "0.01",
+            "r": true, "t": {"limit": {"tif": "Ioc"}}
+          }]
+        }
+      }'
+    ```
+  </Tab>
+  <Tab title="Stop-loss">
+    ```bash
+    curl -s http://localhost:3000/exchange \
+      -H 'Content-Type: application/json' \
+      -d '{
+        "wallet": "0xtest",
+        "action": {
+          "type": "order",
+          "grouping": "na",
+          "orders": [{
+            "a": 0, "b": false, "p": "85000", "s": "0.01",
+            "r": true,
+            "t": {
+              "trigger": {"isMarket": true, "triggerPx": "88000", "tpsl": "sl"},
+              "limit": {"tif": "Gtc"}
+            }
+          }]
+        }
+      }'
+    ```
+  </Tab>
+</Tabs>

@@ -1,0 +1,47 @@
+---
+title: Get Account Info
+description: Get basic account information
+---
+
+<Note>
+  `POST /hypaper`
+</Note>
+
+Returns basic account metadata: user ID, balance, and creation time.
+
+## Request body
+
+```json
+{
+  "type": "getAccountInfo",
+  "user": "0xYourAddress"
+}
+```
+
+<ParamField body="user" type="string" required>
+  Wallet address.
+</ParamField>
+
+## Response
+
+```json
+{
+  "userId": "0xyouraddress",
+  "balance": "100000",
+  "createdAt": 1705000000000
+}
+```
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `userId` | `string` | Wallet address (lowercase) |
+| `balance` | `string` | Current balance in USDC |
+| `createdAt` | `number` | Account creation time (epoch ms) |
+
+## Example
+
+```bash
+curl -s http://localhost:3000/hypaper \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "getAccountInfo", "user": "0xtest"}'
+```

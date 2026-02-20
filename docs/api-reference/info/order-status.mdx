@@ -1,0 +1,74 @@
+---
+title: Order Status
+description: Get the current status of a specific order
+---
+
+<Note>
+  `POST /info`
+</Note>
+
+Returns detailed status information for a single order by its ID.
+
+## Request body
+
+```json
+{
+  "type": "orderStatus",
+  "oid": 12345
+}
+```
+
+<ParamField body="oid" type="number" required>
+  Order ID to look up.
+</ParamField>
+
+## Response
+
+**Order found:**
+
+```json
+{
+  "status": "order",
+  "order": {
+    "coin": "BTC",
+    "side": "B",
+    "limitPx": "49000",
+    "sz": "1",
+    "oid": 12345,
+    "timestamp": 1705000000000,
+    "origSz": "1",
+    "tif": "Gtc",
+    "orderType": "Limit",
+    "status": "open",
+    "statusTimestamp": 1705000000000,
+    "reduceOnly": false,
+    "isPositionTpsl": false
+  }
+}
+```
+
+**Order not found:**
+
+```json
+{
+  "status": "unknownOid"
+}
+```
+
+### Order status values
+
+| Status | Description |
+|--------|-------------|
+| `open` | Resting on book, waiting for fill |
+| `filled` | Fully filled |
+| `cancelled` | Cancelled by user |
+| `triggered` | Trigger condition was met |
+| `rejected` | Order was rejected |
+
+## Example
+
+```bash
+curl -s http://localhost:3000/info \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "orderStatus", "oid": 12345}'
+```

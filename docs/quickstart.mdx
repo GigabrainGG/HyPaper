@@ -1,0 +1,129 @@
+---
+title: Quick Start
+description: Get HyPaper running in under 2 minutes
+---
+
+## Prerequisites
+
+- Node.js 20+
+- Docker (for Redis)
+
+## Installation
+
+<Steps>
+  <Step title="Clone the repository">
+    ```bash
+    git clone https://github.com/GigabrainGG/HyPaper.git
+    cd hypaper-backend
+    npm install
+    ```
+  </Step>
+  <Step title="Start Redis">
+    ```bash
+    docker compose up -d
+    ```
+  </Step>
+  <Step title="Configure environment">
+    ```bash
+    cp .env.example .env
+    ```
+
+    Edit `.env` with your PostgreSQL connection string:
+
+    ```env
+    DATABASE_URL=postgresql://user:pass@host:5432/hypaper
+    REDIS_URL=redis://localhost:6379
+    ```
+
+    All other values have sensible defaults.
+  </Step>
+  <Step title="Push database schema">
+    ```bash
+    npm run db:push
+    ```
+  </Step>
+  <Step title="Start the server">
+    ```bash
+    npm run dev
+    ```
+
+    Server runs on `http://localhost:3000`. WebSocket at `ws://localhost:3000/ws`.
+  </Step>
+</Steps>
+
+## Verify it works
+
+```bash
+# Health check
+curl http://localhost:3000/health
+```
+
+```json
+{ "status": "ok", "time": 1705000000000 }
+```
+
+## Place your first trade
+
+```bash
+curl -s http://localhost:3000/exchange \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "wallet": "0xYourAddress",
+    "action": {
+      "type": "order",
+      "grouping": "na",
+      "orders": [{
+        "a": 0, "b": true, "p": "90000", "s": "0.01",
+        "r": false, "t": {"limit": {"tif": "Gtc"}}
+      }]
+    }
+  }'
+```
+
+```json
+{
+  "status": "ok",
+  "response": {
+    "type": "order",
+    "data": {
+      "statuses": [
+        { "filled": { "totalSz": "0.01", "avgPx": "89500.25", "oid": 1 } }
+      ]
+    }
+  }
+}
+```
+
+## Check your position
+
+```bash
+curl -s http://localhost:3000/info \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "clearinghouseState", "user": "0xYourAddress"}'
+```
+
+## Point your existing bot at HyPaper
+
+```python
+# Before (real HyperLiquid)
+exchange = HyperliquidExchange(base_url="https://api.hyperliquid.xyz")
+
+# After (HyPaper)
+exchange = HyperliquidExchange(base_url="http://localhost:3000")
+```
+
+If your SDK sends `nonce`, `signature`, or `vaultAddress`, that's fine — HyPaper ignores them.
+
+## Environment variables
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DATABASE_URL` | *required* | PostgreSQL connection string |
+| `REDIS_URL` | `redis://localhost:6379` | Redis connection URL |
+| `HL_WS_URL` | `wss://api.hyperliquid.xyz/ws` | HyperLiquid WebSocket URL |
+| `HL_API_URL` | `https://api.hyperliquid.xyz` | HyperLiquid HTTP API |
+| `PORT` | `3000` | HTTP server port |
+| `DEFAULT_BALANCE` | `100000` | Starting balance for new accounts |
+| `LOG_LEVEL` | `info` | Pino log level |
+| `RATE_LIMIT_MAX` | `120` | Max requests per window |
+| `RATE_LIMIT_WINDOW_MS` | `60000` | Rate limit window (ms) |

@@ -1,0 +1,63 @@
+---
+title: Frontend Open Orders
+description: Get open orders with extended fields for UI display
+---
+
+<Note>
+  `POST /info`
+</Note>
+
+Same as `openOrders` but includes additional fields useful for frontend display: TIF, order type, trigger info, and reduce-only flag.
+
+## Request body
+
+```json
+{
+  "type": "frontendOpenOrders",
+  "user": "0xYourAddress"
+}
+```
+
+<ParamField body="user" type="string" required>
+  Wallet address.
+</ParamField>
+
+## Response
+
+```json
+[
+  {
+    "coin": "BTC",
+    "side": "B",
+    "limitPx": "49000",
+    "sz": "1",
+    "oid": 123,
+    "timestamp": 1705000000000,
+    "origSz": "1",
+    "cloid": "my-order-1",
+    "tif": "Gtc",
+    "orderType": "Limit",
+    "reduceOnly": false,
+    "isPositionTpsl": false
+  }
+]
+```
+
+### Additional fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `tif` | `string` | `"Gtc"`, `"Ioc"`, or `"Alo"` |
+| `orderType` | `string` | `"Limit"` or `"Stop"` |
+| `triggerPx` | `string?` | Trigger price (for stop orders) |
+| `triggerCondition` | `string?` | `"tp"` or `"sl"` |
+| `isPositionTpsl` | `boolean` | Whether this is a position-level TP/SL |
+| `reduceOnly` | `boolean` | Whether the order is reduce-only |
+
+## Example
+
+```bash
+curl -s http://localhost:3000/info \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "frontendOpenOrders", "user": "0xtest"}'
+```

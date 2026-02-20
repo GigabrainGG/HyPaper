@@ -1,0 +1,85 @@
+---
+title: User Fills
+description: Get recent trade fills for a user
+---
+
+<Note>
+  `POST /info`
+</Note>
+
+Returns up to **100** most recent fills for a user, ordered by time descending.
+
+## Request body
+
+```json
+{
+  "type": "userFills",
+  "user": "0xYourAddress"
+}
+```
+
+<ParamField body="user" type="string" required>
+  Wallet address.
+</ParamField>
+
+## Response
+
+```json
+[
+  {
+    "coin": "BTC",
+    "px": "50010.5",
+    "sz": "1",
+    "side": "B",
+    "time": 1705000000000,
+    "startPosition": "0",
+    "dir": "Open Long",
+    "closedPnl": "0",
+    "hash": "0x000000000000000000000000000000000000000000000000000000000000006f",
+    "oid": 123,
+    "crossed": true,
+    "fee": "0",
+    "tid": 111,
+    "feeToken": "USDC"
+  }
+]
+```
+
+### Fill fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `coin` | `string` | Asset name |
+| `px` | `string` | Fill price (VWAP) |
+| `sz` | `string` | Fill size |
+| `side` | `string` | `"B"` (buy) or `"A"` (sell) |
+| `time` | `number` | Fill time (epoch ms) |
+| `startPosition` | `string` | Position size before this fill |
+| `dir` | `string` | Direction label (see below) |
+| `closedPnl` | `string` | Realized PnL from this fill |
+| `hash` | `string` | Unique fill hash |
+| `oid` | `number` | Order ID that generated this fill |
+| `crossed` | `boolean` | Always `true` (taker fill) |
+| `fee` | `string` | Fee amount (always `"0"` in paper trading) |
+| `tid` | `number` | Trade ID |
+| `feeToken` | `string` | Fee token (always `"USDC"`) |
+| `cloid` | `string?` | Client order ID (if provided) |
+
+### Direction labels
+
+| Label | Meaning |
+|-------|---------|
+| `"Open Long"` | Opened a new long position |
+| `"Open Short"` | Opened a new short position |
+| `"Close Long"` | Fully closed a long position |
+| `"Close Short"` | Fully closed a short position |
+| `"Buy"` | Increased or partially closed (buy side) |
+| `"Sell"` | Increased or partially closed (sell side) |
+
+## Example
+
+```bash
+curl -s http://localhost:3000/info \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "userFills", "user": "0xtest"}'
+```

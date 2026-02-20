@@ -1,0 +1,37 @@
+---
+title: All Mids
+description: Get mid prices for all traded assets
+---
+
+<Note>
+  `POST /info`
+</Note>
+
+Returns the current mid price for every asset. Prices update in real-time from HyperLiquid's WebSocket feed.
+
+## Request body
+
+```json
+{ "type": "allMids" }
+```
+
+## Response
+
+```json
+{
+  "BTC": "97523.5",
+  "ETH": "3412.75",
+  "SOL": "185.42",
+  "DOGE": "0.3215"
+}
+```
+
+A flat object mapping coin names to their mid prices as strings.
+
+## Example
+
+```bash
+curl -s http://localhost:3000/info \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "allMids"}'
+```

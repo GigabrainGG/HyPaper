@@ -1,0 +1,101 @@
+---
+title: Clearinghouse State
+description: Get positions, margin summary, and account value for a user
+---
+
+<Note>
+  `POST /info`
+</Note>
+
+Returns the complete trading state for a user: open positions, margin usage, account value, and withdrawable balance.
+
+## Request body
+
+```json
+{
+  "type": "clearinghouseState",
+  "user": "0xYourAddress"
+}
+```
+
+<ParamField body="user" type="string" required>
+  Wallet address.
+</ParamField>
+
+## Response
+
+```json
+{
+  "assetPositions": [
+    {
+      "type": "oneWay",
+      "position": {
+        "coin": "BTC",
+        "szi": "1.5",
+        "entryPx": "50000",
+        "positionValue": "75000",
+        "unrealizedPnl": "1500",
+        "returnOnEquity": "0.5",
+        "liquidationPx": "48750",
+        "leverage": {
+          "type": "cross",
+          "value": 20
+        },
+        "cumFunding": {
+          "allTime": "0",
+          "sinceOpen": "0",
+          "sinceChange": "0"
+        },
+        "maxLeverage": 50,
+        "marginUsed": "3750"
+      }
+    }
+  ],
+  "crossMarginSummary": {
+    "accountValue": "101500",
+    "totalNtlPos": "75000",
+    "totalRawUsd": "100000",
+    "totalMarginUsed": "3750"
+  },
+  "marginSummary": {
+    "accountValue": "101500",
+    "totalNtlPos": "75000",
+    "totalRawUsd": "100000",
+    "totalMarginUsed": "3750"
+  },
+  "crossMaintenanceMarginUsed": "1875",
+  "withdrawable": "97750",
+  "time": 1705000000000
+}
+```
+
+### Position fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `coin` | `string` | Asset name |
+| `szi` | `string` | Signed size (positive = long, negative = short) |
+| `entryPx` | `string` | Weighted average entry price |
+| `positionValue` | `string` | `|szi| × markPx` |
+| `unrealizedPnl` | `string` | Current unrealized profit/loss |
+| `returnOnEquity` | `string` | `unrealizedPnl / marginUsed` |
+| `liquidationPx` | `string \| null` | Estimated liquidation price |
+| `leverage` | `object` | `{type: "cross"|"isolated", value: number}` |
+| `marginUsed` | `string` | Margin consumed by this position |
+
+### Margin summary fields
+
+| Field | Type | Description |
+|-------|------|-------------|
+| `accountValue` | `string` | `balance + totalUnrealizedPnl` |
+| `totalNtlPos` | `string` | Total notional position value |
+| `totalRawUsd` | `string` | Balance (without PnL) |
+| `totalMarginUsed` | `string` | Sum of all position margins |
+
+## Example
+
+```bash
+curl -s http://localhost:3000/info \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "clearinghouseState", "user": "0xtest"}'
+```

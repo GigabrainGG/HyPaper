@@ -1,0 +1,54 @@
+---
+title: Reset Account
+description: Wipe all positions, orders, and fills — reset balance to default
+---
+
+<Note>
+  `POST /hypaper`
+</Note>
+
+Resets an account to its initial state. Clears all positions, cancels all open orders, deletes all fill history, and resets the balance to the configured default ($100,000).
+
+## Request body
+
+```json
+{
+  "type": "resetAccount",
+  "user": "0xYourAddress"
+}
+```
+
+<ParamField body="user" type="string" required>
+  Wallet address of the account to reset.
+</ParamField>
+
+## Response
+
+```json
+{
+  "status": "ok",
+  "message": "Account reset"
+}
+```
+
+## What gets cleared
+
+- All open positions
+- All open orders (marked as cancelled)
+- All trigger orders (SL/TP)
+- Fill history
+- Funding history
+- Client order ID mappings
+- Balance reset to `DEFAULT_BALANCE`
+
+## Example
+
+```bash
+curl -s http://localhost:3000/hypaper \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "resetAccount", "user": "0xtest"}'
+```
+
+<Warning>
+  This action is irreversible. All trading history for the account is permanently deleted.
+</Warning>

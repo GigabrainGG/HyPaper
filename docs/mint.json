@@ -1,0 +1,109 @@
+{
+  "$schema": "https://mintlify.com/schema.json",
+  "name": "HyPaper",
+  "logo": {
+    "dark": "/logo/dark.svg",
+    "light": "/logo/light.svg"
+  },
+  "favicon": "/favicon.svg",
+  "colors": {
+    "primary": "#6366F1",
+    "light": "#818CF8",
+    "dark": "#4F46E5",
+    "anchors": {
+      "from": "#6366F1",
+      "to": "#A78BFA"
+    }
+  },
+  "topbarLinks": [
+    {
+      "name": "GitHub",
+      "url": "https://github.com/GigabrainGG/HyPaper"
+    }
+  ],
+  "topbarCtaButton": {
+    "name": "Quick Start",
+    "url": "/quickstart"
+  },
+  "anchors": [
+    {
+      "name": "API Reference",
+      "icon": "code",
+      "url": "/api-reference"
+    },
+    {
+      "name": "GitHub",
+      "icon": "github",
+      "url": "https://github.com/GigabrainGG/HyPaper"
+    }
+  ],
+  "navigation": [
+    {
+      "group": "Getting Started",
+      "pages": [
+        "introduction",
+        "quickstart",
+        "architecture"
+      ]
+    },
+    {
+      "group": "Concepts",
+      "pages": [
+        "concepts/order-matching",
+        "concepts/margin-and-leverage",
+        "concepts/fill-pricing"
+      ]
+    },
+    {
+      "group": "API Reference",
+      "pages": [
+        "api-reference/overview"
+      ]
+    },
+    {
+      "group": "Exchange",
+      "pages": [
+        "api-reference/exchange/place-order",
+        "api-reference/exchange/cancel-order",
+        "api-reference/exchange/cancel-by-cloid",
+        "api-reference/exchange/update-leverage"
+      ]
+    },
+    {
+      "group": "Info",
+      "pages": [
+        "api-reference/info/all-mids",
+        "api-reference/info/clearinghouse-state",
+        "api-reference/info/open-orders",
+        "api-reference/info/frontend-open-orders",
+        "api-reference/info/user-fills",
+        "api-reference/info/user-fills-by-time",
+        "api-reference/info/order-status",
+        "api-reference/info/active-asset-ctx"
+      ]
+    },
+    {
+      "group": "HyPaper",
+      "pages": [
+        "api-reference/hypaper/reset-account",
+        "api-reference/hypaper/set-balance",
+        "api-reference/hypaper/get-account-info"
+      ]
+    },
+    {
+      "group": "WebSocket",
+      "pages": [
+        "api-reference/websocket/overview"
+      ]
+    },
+    {
+      "group": "Deployment",
+      "pages": [
+        "deployment"
+      ]
+    }
+  ],
+  "footerSocials": {
+    "github": "https://github.com/GigabrainGG/HyPaper"
+  }
+}

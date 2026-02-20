@@ -1,0 +1,49 @@
+---
+title: Set Balance
+description: Override an account's balance to any value
+---
+
+<Note>
+  `POST /hypaper`
+</Note>
+
+Set the account balance to an arbitrary amount. Useful for testing specific margin scenarios.
+
+## Request body
+
+```json
+{
+  "type": "setBalance",
+  "user": "0xYourAddress",
+  "balance": 500000
+}
+```
+
+<ParamField body="user" type="string" required>
+  Wallet address.
+</ParamField>
+
+<ParamField body="balance" type="number" required>
+  New balance amount in USDC.
+</ParamField>
+
+## Response
+
+```json
+{
+  "status": "ok",
+  "balance": "500000"
+}
+```
+
+## Example
+
+```bash
+curl -s http://localhost:3000/hypaper \
+  -H 'Content-Type: application/json' \
+  -d '{"type": "setBalance", "user": "0xtest", "balance": 1000000}'
+```
+
+<Note>
+  This only changes the balance — it does not affect existing positions or open orders.
+</Note>

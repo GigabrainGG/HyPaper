@@ -1,0 +1,101 @@
+---
+title: Deployment
+description: Deploy HyPaper to production
+---
+
+## Requirements
+
+- Node.js 20+ or Docker
+- Redis 7+
+- PostgreSQL 15+ (Neon, Supabase, or self-hosted)
+
+## Docker Compose (simplest)
+
+```bash
+docker compose --profile prod up -d
+```
+
+This starts both Redis and the HyPaper app. Configure via `.env` file.
+
+## Docker (custom)
+
+```bash
+docker build -t hypaper .
+docker run -p 3000:3000 \
+  -e DATABASE_URL="postgresql://..." \
+  -e REDIS_URL="redis://your-redis:6379" \
+  hypaper
+```
+
+The Dockerfile uses a multi-stage build (node:22-alpine) that strips dev dependencies for a lean production image.
+
+## Platform guides
+
+<Tabs>
+  <Tab title="Railway">
+    1. Connect your GitHub repo
+    2. Add a Redis service (Railway add-on)
+    3. Set environment variables:
+       - `DATABASE_URL` — your PostgreSQL connection string
+       - `REDIS_URL` — auto-configured from the Redis add-on
+    4. Railway auto-detects the Dockerfile and deploys
+
+    Railway natively supports WebSockets.
+  </Tab>
+  <Tab title="Fly.io">
+    ```bash
+    fly launch
+    fly secrets set DATABASE_URL="postgresql://..."
+    fly secrets set REDIS_URL="redis://..."
+    fly deploy
+    ```
+
+    Fly.io has native WebSocket support. Use [Upstash Redis](https://upstash.com) as the Redis add-on.
+  </Tab>
+  <Tab title="VPS (Hetzner, DO)">
+    ```bash
+    # On your server
+    git clone https://github.com/GigabrainGG/HyPaper.git
+    cd hypaper-backend
+    cp .env.example .env
+    # Edit .env with your DATABASE_URL and REDIS_URL
+
+    docker compose --profile prod up -d
+    ```
+
+    For production, put behind a reverse proxy (nginx, Caddy) with SSL.
+  </Tab>
+</Tabs>
+
+## Environment variables
+
+| Variable | Default | Required | Description |
+|----------|---------|----------|-------------|
+| `DATABASE_URL` | — | Yes | PostgreSQL connection string |
+| `REDIS_URL` | `redis://localhost:6379` | No | Redis connection URL |
+| `HL_WS_URL` | `wss://api.hyperliquid.xyz/ws` | No | HyperLiquid WebSocket |
+| `HL_API_URL` | `https://api.hyperliquid.xyz` | No | HyperLiquid HTTP API |
+| `PORT` | `3000` | No | HTTP server port |
+| `DEFAULT_BALANCE` | `100000` | No | Starting balance for new accounts |
+| `LOG_LEVEL` | `info` | No | Log level (debug, info, warn, error) |
+| `RATE_LIMIT_MAX` | `120` | No | Max requests per rate limit window |
+| `RATE_LIMIT_WINDOW_MS` | `60000` | No | Rate limit window in ms |
+
+## Database setup
+
+Push the schema to your PostgreSQL database:
+
+```bash
+npm run db:push
+```
+
+Or generate and run migrations:
+
+```bash
+npm run db:generate
+npm run db:migrate
+```
+
+<Warning>
+  **WebSocket support required.** Platforms like Vercel and Cloudflare Workers do not support WebSockets and will not work with HyPaper.
+</Warning>

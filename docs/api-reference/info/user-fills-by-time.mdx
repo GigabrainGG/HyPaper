@@ -1,0 +1,70 @@
+---
+title: User Fills by Time
+description: Get trade fills within a specific time range
+---
+
+<Note>
+  `POST /info`
+</Note>
+
+Returns fills for a user within a specified time window. Useful for backfilling trade history.
+
+## Request body
+
+```json
+{
+  "type": "userFillsByTime",
+  "user": "0xYourAddress",
+  "startTime": 1704900000000,
+  "endTime": 1705000000000
+}
+```
+
+<ParamField body="user" type="string" required>
+  Wallet address.
+</ParamField>
+
+<ParamField body="startTime" type="number" required>
+  Start of time range (epoch milliseconds, inclusive).
+</ParamField>
+
+<ParamField body="endTime" type="number">
+  End of time range (epoch milliseconds, inclusive). If omitted, returns all fills from `startTime` onwards.
+</ParamField>
+
+## Response
+
+Same format as [User Fills](/api-reference/info/user-fills).
+
+```json
+[
+  {
+    "coin": "BTC",
+    "px": "50010.5",
+    "sz": "1",
+    "side": "B",
+    "time": 1704950000000,
+    "startPosition": "0",
+    "dir": "Open Long",
+    "closedPnl": "0",
+    "hash": "0x...",
+    "oid": 123,
+    "crossed": true,
+    "fee": "0",
+    "tid": 111,
+    "feeToken": "USDC"
+  }
+]
+```
+
+## Example
+
+```bash
+curl -s http://localhost:3000/info \
+  -H 'Content-Type: application/json' \
+  -d '{
+    "type": "userFillsByTime",
+    "user": "0xtest",
+    "startTime": 1704900000000
+  }'
+```
