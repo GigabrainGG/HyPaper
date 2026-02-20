@@ -27,7 +27,7 @@ const { OrderMatcher } = await import('../worker/order-matcher.js');
 
 describe('OrderMatcher', () => {
   let eventBus: EventEmitter;
-  let matcher: OrderMatcher;
+  let matcher: InstanceType<typeof OrderMatcher>;
   let fillEvents: Array<{ userId: string; fill: any }>;
   let orderEvents: Array<{ userId: string; order: any; status: string }>;
 
