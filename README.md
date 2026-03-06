@@ -44,6 +44,7 @@ Server runs on `http://localhost:3000`. WebSocket at `ws://localhost:3000/ws`.
 Copy `.env.example` to `.env` and edit as needed:
 
 ```env
+DATABASE_URL=postgresql://localhost:5432/hypaper
 REDIS_URL=redis://localhost:6379
 HL_WS_URL=wss://api.hyperliquid.xyz/ws
 HL_API_URL=https://api.hyperliquid.xyz
@@ -53,6 +54,29 @@ LOG_LEVEL=info
 ```
 
 Bring your own Redis — any Redis 7+ works (local, Docker, Upstash, Redis Cloud, etc.).
+
+## Realtime smoke test
+
+Once the backend is running and connected to Redis/Postgres, you can exercise the live HTTP + WebSocket surface with a paper wallet:
+
+```bash
+npm run test:realtime
+```
+
+Useful options:
+
+```bash
+npm run test:realtime -- --base-url http://localhost:3000 --wallet 0xpaperbot --coin BTC
+```
+
+The script:
+
+- checks `GET /health`
+- tests supported `POST /hypaper` actions
+- tests supported `POST /exchange` actions (`order`, `cancel`, `cancelByCloid`, `updateLeverage`)
+- verifies `POST /info` local paper-state queries and proxied live-market queries
+- connects to `WebSocket /ws` and verifies `allMids`, `l2Book`, `orderUpdates`, and `userFills`
+- uses only paper balances and resets the test account at the end by default
 
 ## Authentication
 

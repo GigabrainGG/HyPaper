@@ -285,12 +285,12 @@ export class OrderMatcher {
       newSzi,
     }, 'Order filled');
 
-    this.eventBus.emit('fill', { userId, fill });
     this.eventBus.emit('orderUpdate', {
       userId,
       order: { ...order, status: 'filled' as const, filledSz: order.sz, avgPx: fillPx, updatedAt: now },
       status: 'filled',
     });
+    this.eventBus.emit('fill', { userId, fill });
   }
 
   private getFillDir(startPosition: string, signedFillSz: string): string {
@@ -334,4 +334,3 @@ export class OrderMatcher {
     };
   }
 }
-
