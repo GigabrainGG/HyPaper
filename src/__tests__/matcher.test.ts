@@ -218,14 +218,15 @@ describe('OrderMatcher', () => {
       expect(fillEvents).toHaveLength(0);
     });
 
-    it('fills at exact limit price', async () => {
+    it('fills rested orders at the current mid price when L2 is unavailable', async () => {
       await seedUser('100000');
-      await seedMidPrice(COIN, '50000');
+      await seedMidPrice(COIN, '49000');
       await createOpenOrder({ oid: 1, isBuy: true, sz: '1', limitPx: '50000' });
 
       await matcher.matchAll();
 
       expect(fillEvents).toHaveLength(1);
+      expect(fillEvents[0].fill.px).toBe('49000');
     });
 
     it('matches multiple orders in one pass', async () => {

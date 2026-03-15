@@ -37,8 +37,10 @@ exchangeRouter.post('/', async (c) => {
               typeof o.r !== 'boolean' || !o.t?.limit?.tif) {
             return c.json({ status: 'err', response: 'Invalid order wire format' }, 400);
           }
-          if (Number(o.s) <= 0 || Number(o.p) <= 0) {
-            return c.json({ status: 'err', response: 'Size and price must be positive' }, 400);
+          const size = Number(o.s);
+          const price = Number(o.p);
+          if (!Number.isFinite(size) || size <= 0 || !Number.isFinite(price) || price <= 0) {
+            return c.json({ status: 'err', response: 'Size and price must be finite positive numbers' }, 400);
           }
         }
 
