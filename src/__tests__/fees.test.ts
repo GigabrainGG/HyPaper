@@ -140,12 +140,12 @@ describe('Fees', () => {
 
     expect(fillEvents).toHaveLength(1);
     const fill = fillEvents[0].fill;
-    // fee = 1 * 50000 * 0.0001 = 5 (uses limitPx as fill price when no L2)
-    expect(fill.fee).toBe('5');
+    // fee = 1 * 49000 * 0.0001 = 4.9 (uses midPx fallback when no L2)
+    expect(fill.fee).toBe('4.9');
     expect(fill.crossed).toBe(false);
 
     const account = await redisMock.hgetall(KEYS.USER_ACCOUNT(USER));
-    expect(parseFloat(account.balance)).toBeCloseTo(100000 - 5, 2);
+    expect(parseFloat(account.balance)).toBeCloseTo(100000 - 4.9, 2);
   });
 
   it('deducts fee from balance correctly alongside PnL', async () => {

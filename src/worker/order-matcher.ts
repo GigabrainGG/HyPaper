@@ -57,7 +57,7 @@ export class OrderMatcher {
         : gte(midPx, order.limitPx);
 
       if (shouldFill) {
-        const fillPx = await computeFillPrice(order, order.limitPx);
+        const fillPx = await computeFillPrice(order, midPx);
         await this.executeFill(order, fillPx, false); // rested orders are maker
       }
     }

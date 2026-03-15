@@ -63,8 +63,8 @@ hypaperRouter.post('/', async (c) => {
 
       case 'setBalance': {
         const balance = body.balance;
-        if (balance === undefined || typeof balance !== 'number') {
-          return c.json({ error: 'Missing or invalid balance' }, 400);
+        if (balance === undefined || typeof balance !== 'number' || !Number.isFinite(balance) || balance < 0) {
+          return c.json({ error: 'Missing or invalid balance (must be a finite non-negative number)' }, 400);
         }
         await redis.hset(KEYS.USER_ACCOUNT(normalizedUser), 'balance', balance.toString());
 
